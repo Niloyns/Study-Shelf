@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Study Shelf</title>
+    <style>
+      :root {
+        --bg: #eef1f4;
+        --panel: #fff;
+        --ink: #1c2733;
+        --mute: #66758a;
+        --line: #d6dde5;
+        --accent: #0f766e;
+        --accent-ink: #fff;
+        --done: #e3f3ef;
+        --danger: #b42318;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #10161d;
+          --panel: #18212b;
+          --ink: #e6ecf2;
+          --mute: #8d9bad;
+          --line: #2a3643;
+          --accent: #3cc5b4;
+          --accent-ink: #06211d;
+          --done: #14332f;
+          --danger: #f97066;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 6px;
+        padding: 6px 10px;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        min-height: 100vh;
+      }
+      aside {
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        padding: 18px 14px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+      }
+      aside h1 {
+        font-size: 20px;
+        margin: 0 0 14px;
+        letter-spacing: -0.01em;
+      }
+      .topic {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 10px;
+        margin-bottom: 2px;
+        background: none;
+      }
+      .topic.on {
+        background: var(--done);
+        font-weight: 600;
+      }
+      .topic small {
+        display: block;
+        color: var(--mute);
+        font-weight: 400;
+      }
+      .bar {
+        height: 4px;
+        background: var(--line);
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+      }
+      .newtopic {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .newtopic input {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      main {
+        padding: 22px;
+        max-width: 900px;
+        width: 100%;
+      }
+      .add {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 20px;
+      }
+      .add textarea {
+        width: 100%;
+        min-height: 76px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 8px;
+        resize: vertical;
+      }
+      .add .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .add .hint {
+        color: var(--mute);
+        font-size: 13px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .head .tools {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .item {
+        display: grid;
+        grid-template-columns: 34px 168px 1fr auto;
+        gap: 12px;
+        align-items: start;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .item.done {
+        background: var(--done);
+      }
+      .item.drag {
+        opacity: 0.4;
+      }
+      .item.over {
+        border-color: var(--accent);
+        border-style: dashed;
+      }
+      .num {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+        text-align: center;
+        padding-top: 4px;
+        cursor: grab;
+      }
+      .thumb {
+        position: relative;
+        display: block;
+        width: 168px;
+        aspect-ratio: 16/9;
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--line);
+      }
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .item.done .thumb img {
+        filter: grayscale(0.8);
+        opacity: 0.7;
+      }
+      .info {
+        min-width: 0;
+      }
+      .title {
+        font-weight: 600;
+        cursor: text;
+        word-break: break-word;
+      }
+      .item.done .title {
+        text-decoration: line-through;
+        text-decoration-color: var(--mute);
+      }
+      .info a {
+        color: var(--mute);
+        font-size: 13px;
+        text-decoration: none;
+      }
+      .info a:hover {
+        color: var(--accent);
+      }
+      .note {
+        width: 100%;
+        margin-top: 6px;
+        border: 1px solid transparent;
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 32px;
+      }
+      .note:focus {
+        border-color: var(--line);
+      }
+      .acts {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .acts button {
+        padding: 4px 8px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .acts .del {
+        color: var(--danger);
+      }
+      .empty {
+        border: 2px dashed var(--line);
+        border-radius: 10px;
+        padding: 32px;
+        text-align: center;
+        color: var(--mute);
+      }
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        aside {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        main {
+          padding: 14px;
+        }
+        .item {
+          grid-template-columns: 28px 1fr;
+        }
+        .thumb {
+          width: 100%;
+        }
+        .acts {
+          grid-column: 1/-1;
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+        .info {
+          grid-column: 1/-1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside>
+        <h1>Study Shelf</h1>
+        <div id="topics"></div>
+        <form class="newtopic" id="topicForm">
+          <input
+            id="topicName"
+            placeholder="New topic, e.g. React"
+            aria-label="New topic name"
+          />
+          <button class="primary">Add</button>
+        </form>
+      </aside>
+      <main>
+        <section class="add">
+          <textarea
+            id="links"
+            placeholder="Paste one or more YouTube links (one per line)"
+          ></textarea>
+          <div class="row">
+            <button class="primary" id="addBtn">Add to this topic</button>
+            <span class="hint" id="status"
+              >Titles load automatically when online. Click a title to rename
+              it.</span
+            >
+          </div>
+        </section>
+        <div class="head">
+          <h2 id="topicTitle"></h2>
+          <div class="tools">
+            <button id="renameT">Rename topic</button>
+            <button id="delT">Delete topic</button>
+            <button id="exportB">Backup</button>
+            <button id="importB">Restore</button>
+            <input type="file" id="file" accept="application/json" hidden />
+          </div>
+        </div>
+        <div id="list"></div>
+      </main>
+    </div>
+    <script>
+      (function () {
+        var KEY = "studyShelf.v1",
+          S;
+        function uid() {
+          return Math.random().toString(36).slice(2, 9);
+        }
+        function load() {
+          try {
+            S = JSON.parse(localStorage.getItem(KEY));
+          } catch (e) {
+            S = null;
+          }
+          if (!S || !S.topics || !S.topics.length) {
+            var t = uid();
+            S = {
+              topics: [{ id: t, name: "My first topic" }],
+              videos: [],
+              cur: t,
+            };
+          }
+        }
+        function save() {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(S));
+          } catch (e) {}
+        }
+        function $(id) {
+          return document.getElementById(id);
+        }
+        function esc(s) {
+          return String(s).replace(/[&<>"]/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+          });
+        }
+        function parseId(u) {
+          var m = u.match(
+            /(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/,
+          );
+          return m ? m[1] : null;
+        }
+        function inTopic() {
+          return S.videos.filter(function (v) {
+            return v.topic === S.cur;
+          });
+        }
+
+        function render() {
+          var tp = $("topics");
+          tp.innerHTML = "";
+          S.topics.forEach(function (t) {
+            var vs = S.videos.filter(function (v) {
+                return v.topic === t.id;
+              }),
+              d = vs.filter(function (v) {
+                return v.done;
+              }).length;
+            var b = document.createElement("button");
+            b.className = "topic" + (t.id === S.cur ? " on" : "");
+            b.innerHTML =
+              esc(t.name) +
+              "<small>" +
+              d +
+              " of " +
+              vs.length +
+              ' watched</small><div class="bar"><i style="width:' +
+              (vs.length ? (d / vs.length) * 100 : 0) +
+              '%"></i></div>';
+            b.onclick = function () {
+              S.cur = t.id;
+              save();
+              render();
+            };
+            tp.appendChild(b);
+          });
+          var cur = S.topics.filter(function (t) {
+            return t.id === S.cur;
+          })[0];
+          $("topicTitle").textContent = cur.name;
+          var L = $("list");
+          L.innerHTML = "";
+          var vs = inTopic();
+          if (!vs.length) {
+            L.innerHTML =
+              '<div class="empty">Nothing here yet. Paste links above, in the order you want to watch them.</div>';
+            return;
+          }
+          vs.forEach(function (v, i) {
+            var el = document.createElement("div");
+            el.className = "item" + (v.done ? " done" : "");
+            el.draggable = true;
+            el.dataset.id = v.id;
+            el.innerHTML =
+              '<div class="num" title="Drag to reorder">' +
+              (i + 1) +
+              "</div>" +
+              '<a class="thumb" href="' +
+              esc(v.url) +
+              '" target="_blank" rel="noopener"><img loading="lazy" alt="" src="https://img.youtube.com/vi/' +
+              v.vid +
+              '/mqdefault.jpg"></a>' +
+              '<div class="info"><div class="title" data-a="title">' +
+              esc(v.title) +
+              '</div><a href="' +
+              esc(v.url) +
+              '" target="_blank" rel="noopener">Open on YouTube</a>' +
+              '<textarea class="note" rows="1" placeholder="Note: what to learn from this" data-a="note">' +
+              esc(v.note || "") +
+              "</textarea></div>" +
+              '<div class="acts"><button data-a="done">' +
+              (v.done ? "Mark unwatched" : "Mark watched") +
+              "</button>" +
+              '<button data-a="up"' +
+              (i === 0 ? " disabled" : "") +
+              '>Move up</button><button data-a="down"' +
+              (i === vs.length - 1 ? " disabled" : "") +
+              ">Move down</button>" +
+              '<button data-a="move">Move to topic</button><button class="del" data-a="del">Remove</button></div>';
+            L.appendChild(el);
+          });
+        }
+
+        function swap(id, dir) {
+          var vs = inTopic(),
+            i = vs.findIndex(function (v) {
+              return v.id === id;
+            }),
+            j = i + dir;
+          if (j < 0 || j >= vs.length) return;
+          var a = S.videos.indexOf(vs[i]),
+            b = S.videos.indexOf(vs[j]),
+            t = S.videos[a];
+          S.videos[a] = S.videos[b];
+          S.videos[b] = t;
+        }
+
+        $("list").addEventListener("click", function (e) {
+          var b = e.target.closest("button");
+          if (!b) return;
+          var row = b.closest(".item"),
+            id = row.dataset.id,
+            v = S.videos.filter(function (x) {
+              return x.id === id;
+            })[0];
+          var a = b.dataset.a;
+          if (a === "done") v.done = !v.done;
+          else if (a === "up") swap(id, -1);
+          else if (a === "down") swap(id, 1);
+          else if (a === "del") {
+            if (!confirm("Remove this video from the list?")) return;
+            S.videos = S.videos.filter(function (x) {
+              return x.id !== id;
+            });
+          } else if (a === "move") {
+            var names = S.topics
+              .filter(function (t) {
+                return t.id !== S.cur;
+              })
+              .map(function (t, i) {
+                return i + 1 + ". " + t.name;
+              });
+            if (!names.length) {
+              alert("Create another topic first.");
+              return;
+            }
+            var n = prompt(
+              "Move to which topic? Type the number:\n" + names.join("\n"),
+            );
+            var o = S.topics.filter(function (t) {
+              return t.id !== S.cur;
+            })[parseInt(n, 10) - 1];
+            if (!o) return;
+            v.topic = o.id;
+          }
+          save();
+          render();
+        });
+        $("list").addEventListener("click", function (e) {
+          var t = e.target.closest(".title");
+          if (!t) return;
+          var row = t.closest(".item"),
+            v = S.videos.filter(function (x) {
+              return x.id === row.dataset.id;
+            })[0];
+          var n = prompt("Rename video", v.title);
+          if (n && n.trim()) {
+            v.title = n.trim();
+            save();
+            render();
+          }
+        });
+        $("list").addEventListener("change", function (e) {
+          if (e.target.dataset.a === "note") {
+            var row = e.target.closest(".item"),
+              v = S.videos.filter(function (x) {
+                return x.id === row.dataset.id;
+              })[0];
+            v.note = e.target.value;
+            save();
+          }
+        });
+
+        var dragId = null;
+        $("list").addEventListener("dragstart", function (e) {
+          var r = e.target.closest(".item");
+          if (!r) return;
+          dragId = r.dataset.id;
+          r.classList.add("drag");
+          e.dataTransfer.effectAllowed = "move";
+        });
+        $("list").addEventListener("dragend", function () {
+          dragId = null;
+          render();
+        });
+        $("list").addEventListener("dragover", function (e) {
+          var r = e.target.closest(".item");
+          if (!r || !dragId) return;
+          e.preventDefault();
+          Array.prototype.forEach.call($("list").children, function (c) {
+            c.classList.remove("over");
+          });
+          r.classList.add("over");
+        });
+        $("list").addEventListener("drop", function (e) {
+          var r = e.target.closest(".item");
+          if (!r || !dragId || r.dataset.id === dragId) return;
+          e.preventDefault();
+          var from = S.videos.filter(function (v) {
+              return v.id === dragId;
+            })[0],
+            to = S.videos.filter(function (v) {
+              return v.id === r.dataset.id;
+            })[0];
+          S.videos.splice(S.videos.indexOf(from), 1);
+          S.videos.splice(S.videos.indexOf(to), 0, from);
+          save();
+          render();
+        });
+
+        function fetchTitle(v) {
+          return fetch(
+            "https://noembed.com/embed?url=" +
+              encodeURIComponent("https://www.youtube.com/watch?v=" + v.vid),
+          )
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (d) {
+              if (d && d.title) {
+                v.title = d.title;
+                save();
+                render();
+              }
+            })
+            .catch(function () {});
+        }
+
+        $("addBtn").onclick = function () {
+          var lines = $("links").value.split(/\s+/).filter(Boolean),
+            added = 0,
+            bad = 0,
+            fresh = [];
+          lines.forEach(function (u) {
+            var id = parseId(u);
+            if (!id) {
+              bad++;
+              return;
+            }
+            var v = {
+              id: uid(),
+              vid: id,
+              url:
+                u.indexOf("http") === 0
+                  ? u
+                  : "https://www.youtube.com/watch?v=" + id,
+              title: "Video " + id,
+              note: "",
+              topic: S.cur,
+              done: false,
+            };
+            S.videos.push(v);
+            fresh.push(v);
+            added++;
+          });
+          $("links").value = "";
+          save();
+          render();
+          $("status").textContent =
+            added +
+            " added" +
+            (bad ? ", " + bad + " not recognised as YouTube links" : "") +
+            ".";
+          fresh.forEach(fetchTitle);
+        };
+
+        $("topicForm").onsubmit = function (e) {
+          e.preventDefault();
+          var n = $("topicName").value.trim();
+          if (!n) return;
+          var t = { id: uid(), name: n };
+          S.topics.push(t);
+          S.cur = t.id;
+          $("topicName").value = "";
+          save();
+          render();
+        };
+        $("renameT").onclick = function () {
+          var t = S.topics.filter(function (x) {
+              return x.id === S.cur;
+            })[0],
+            n = prompt("Topic name", t.name);
+          if (n && n.trim()) {
+            t.name = n.trim();
+            save();
+            render();
+          }
+        };
+        $("delT").onclick = function () {
+          if (S.topics.length < 2) {
+            alert("Keep at least one topic.");
+            return;
+          }
+          var n = inTopic().length;
+          if (!confirm("Delete this topic and its " + n + " video(s)?")) return;
+          S.videos = S.videos.filter(function (v) {
+            return v.topic !== S.cur;
+          });
+          S.topics = S.topics.filter(function (t) {
+            return t.id !== S.cur;
+          });
+          S.cur = S.topics[0].id;
+          save();
+          render();
+        };
+        $("exportB").onclick = function () {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(
+            new Blob([JSON.stringify(S, null, 2)], {
+              type: "application/json",
+            }),
+          );
+          a.download = "study-shelf-backup.json";
+          a.click();
+        };
+        $("importB").onclick = function () {
+          $("file").click();
+        };
+        $("file").onchange = function (e) {
+          var f = e.target.files[0];
+          if (!f) return;
+          var r = new FileReader();
+          r.onload = function () {
+            try {
+              var d = JSON.parse(r.result);
+              if (!d.topics || !d.videos) throw 0;
+              if (!confirm("Replace everything with this backup?")) return;
+              S = d;
+              if (!S.cur) S.cur = S.topics[0].id;
+              save();
+              render();
+            } catch (x) {
+              alert("That file is not a Study Shelf backup.");
+            }
+          };
+          r.readAsText(f);
+        };
+
+        load();
+        render();
+      })();
+    </script>
+  </body>
+</html>
